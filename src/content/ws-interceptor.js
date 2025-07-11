@@ -10,16 +10,6 @@ window.WebSocket = function (url, protocols) {
   const ws = new OriginalWebSocket(url, protocols);
 
   console.log("🔗 WebSocket connection created:", url);
-
-  // Store original methods
-  const originalSend = ws.send;
-
-  // Override send - this is safe and won't cause loops
-  ws.send = function (data) {
-    // console.log("📤 Outgoing:", data);
-    return originalSend.call(this, data);
-  };
-
   // Add ONE message listener using capture phase
   // This fires before any user handlers
   ws.addEventListener(
