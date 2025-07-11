@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "CRXJS Vanilla JS Example",
+  "version": "1.0.0",
+  "action": { "default_popup": "src/popup/index.html" },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "webRequest",
+    "ws://*/*",
+    "wss://*/*"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["https://gartic.io/*"],
+      "js": ["src/content/ws-interceptor.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://gartic.io/*"],
+      "js": ["src/content/index.ts"]
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  }
+}
