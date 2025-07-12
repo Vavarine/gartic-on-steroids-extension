@@ -21,6 +21,7 @@ const onRightGuess = () => {
 
   canvas.dispatchEvent(mouseUpEvent);
   canvas.style.pointerEvents = 'none';
+  canvas.style.cursor = 'not-allowed';
 }
 
 const onGameEnd = () => {
@@ -30,6 +31,7 @@ const onGameEnd = () => {
   if (!canvas) return;
 
   canvas.style.pointerEvents = 'auto';
+  canvas.style.cursor = 'default';
 }
 
 window.addEventListener('message', (event) => {
