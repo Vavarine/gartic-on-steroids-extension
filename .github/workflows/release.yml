@@ -1,0 +1,111 @@
+name: Build and Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: false
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+    
+    - name: Install dependencies
+      run: pnpm install
+    
+    - name: Configure git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Bump version
+      id: bump_version
+      run: |
+        # Use npm to bump version and get the new version
+        NEW_VERSION=$(npm version ${{ github.event.inputs.bump_type }} --no-git-tag-version)
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "VERSION_TAG=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "Bumped version to: $NEW_VERSION"
+    
+    - name: Commit version change
+      run: |
+        git add package.json
+        git commit -m "chore: bump version to ${{ steps.bump_version.outputs.NEW_VERSION }}"
+    
+    - name: Build and package extension
+      run: pnpm run package
+    
+    - name: Verify build artifacts
+      run: |
+        if [ ! -f "./.out/extension.crx" ]; then
+          echo "Error: extension.crx not found"
+          exit 1
+        fi
+        if [ ! -f "./.out/extension.zip" ]; then
+          echo "Error: extension.zip not found"
+          exit 1
+        fi
+        echo "Build artifacts verified:"
+        ls -la ./.out/
+    
+    - name: Rename files with version
+      run: |
+        VERSION="${{ steps.bump_version.outputs.NEW_VERSION }}"
+        mv ./.out/extension.crx ./.out/extension-${VERSION}.crx
+        mv ./.out/extension.zip ./.out/extension-${VERSION}.zip
+        echo "Files renamed with version ${VERSION}:"
+        ls -la ./.out/
+    
+    - name: Create and push tag
+      run: |
+        git tag ${{ steps.bump_version.outputs.VERSION_TAG }}
+        git push origin HEAD:${{ github.ref_name }}
+        git push origin ${{ steps.bump_version.outputs.VERSION_TAG }}
+    
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.bump_version.outputs.VERSION_TAG }}
+        name: Release ${{ steps.bump_version.outputs.VERSION_TAG }}
+        body: |
+          Extension release ${{ steps.bump_version.outputs.VERSION_TAG }}
+          
+          ## Installation
+          - Download the `.crx` file for Chrome/Edge (may require developer mode)
+          - Download the `.zip` file for manual installation or other browsers
+          
+          ## Changes
+          See the commits since the last release for detailed changes.
+        draft: false
+        prerelease: false
+        files: |
+          ./.out/extension-${{ steps.bump_version.outputs.NEW_VERSION }}.crx
+          ./.out/extension-${{ steps.bump_version.outputs.NEW_VERSION }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

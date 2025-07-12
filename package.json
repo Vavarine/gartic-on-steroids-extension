@@ -6,12 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "package": "vite build && rimraf .out && mkdir .out && crx3 web-extension-directory ./dist -o ./.out/extension.crx -z ./.out/extension.zip --key=./.out/private-key.pem",
     "preview": "vite preview"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.2",
     "@types/node": "^24.0.13",
-    "typescript": "~5.8.3",
+    "crx3": "^1.1.3",
+    "rimraf": "^6.0.1",
+     "typescript": "~5.8.3",
     "vite": "^7.0.4"
   },
   "dependencies": {
